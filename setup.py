@@ -1,4 +1,64 @@
+import os
+import re
 import setuptools
+
+# Get version based on Javabridge setup functions
+
+def pep440_compliant(ver):
+    if ver is None:
+        return ver
+    m = re.match(r"^(?P<version>(\d[\d\.]*))$", ver)
+    if m:
+        return ver
+    m = re.match(r"^(?P<version>([v]\d[\d\.]*))-(?P<count>\d+)-(?P<sha>.*)$", ver)
+    if m:
+        res = m.group('version') + '.post' + m.group('count') + '+' + m.group('sha')
+        return res
+    return ver
+
+def get_version():
+    """Get version from git or file system.
+
+    If this is a git repository, try to get the version number by
+    running ``git describe``, then store it in
+    bioformats/_version.py. Otherwise, try to load the version number
+    from that file. If both methods fail, quietly return None.
+
+    """
+    git_version = None
+    if os.path.exists(os.path.join(os.path.dirname(__file__), '.git')):
+        import subprocess
+        try:
+            # get all tags, including non-annotated ones
+            git_version = subprocess.Popen(
+                ['git', 'describe', '--tags'],
+                stdout=subprocess.PIPE).communicate()[0].strip().decode('utf-8')
+        except:
+            print("could not find")
+            pass
+
+    version_file = os.path.join(os.path.dirname(__file__), 'bioformats',
+                                '_version.py')
+    if os.path.exists(version_file):
+        with open(version_file) as f:
+            cached_version_line = f.read().strip()
+        try:
+            # From http://stackoverflow.com/a/3619714/17498
+            cached_version = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]",
+                                       cached_version_line, re.M).group(1)
+        except:
+            raise RuntimeError("Unable to find version in %s" % version_file)
+    else:
+        cached_version = None
+
+    if git_version and git_version != cached_version:
+        try:
+            with open(version_file, 'w') as f:
+                print('__version__ = "%s"' % git_version, file=f)
+        except FileNotFoundError as e:
+            print("Unable to create version file, skipping")
+
+    return pep440_compliant(git_version or cached_version)
 
 setuptools.setup(
     author="Lee Kamentsky",
@@ -21,7 +81,7 @@ setuptools.setup(
     install_requires=[
         "boto3>=1.14.23",
         "future>=0.18.2",
-        "python-javabridge==4.0.3"
+        "javabridge"
     ],
     license="GPL License",
     long_description="""Python-bioformats is a Python wrapper for Bio-Formats, a standalone Java library for reading
@@ -42,5 +102,5 @@ setuptools.setup(
         "bioformats"
     ],
     url="http://github.com/CellProfiler/python-bioformats/",
-    version="4.0.5"
+    version=get_version(),
 )
