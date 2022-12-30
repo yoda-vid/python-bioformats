@@ -50,7 +50,11 @@ import javabridge as jutil
 import bioformats
 from . import metadatatools as metadatatools
 import javabridge as javabridge
-import boto3
+try:
+    import boto3
+except ImportError:
+    boto3 = None
+    pass
 
 OMERO_READER_IMPORTED = False
 try:
@@ -682,6 +686,8 @@ class ImageReader(object):
         self.using_temp_file = True
 
         if scheme == 's3':
+            if boto3 is None:
+                raise ImportError("Please install 'boto3'")
             client = boto3.client('s3')
             bucket_name, key = re.compile('s3://([\w\d\-\.]+)/(.*)').search(url).groups()
             url = client.generate_presigned_url(

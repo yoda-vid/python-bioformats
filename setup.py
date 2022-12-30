@@ -76,10 +76,12 @@ setuptools.setup(
     extras_require={
         "test": [
             "pytest>=3.3.2,<4"
-        ]
+        ],
+        "aws": [
+            "boto3>=1.14.23",
+        ],
     },
     install_requires=[
-        "boto3>=1.14.23",
         "future>=0.18.2",
         "javabridge"
     ],
